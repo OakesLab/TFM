@@ -475,7 +475,7 @@ def cellmask_threshold(imagename, small_object_size=50, cell_minimum_area=50000,
 
 def crop_TFM_image(frame, width, height, corner = (0,0), mask = None, arrow_spacing = 12, LUT = 'viridis', arrow_scale = None, 
                    TFM_min = 0, TFM_max = None, arrow_color = 'w', min_arrow_mag = None, arrow_width = 1, colorbar = False, 
-                   save_fig = True, file_type = 'both'):
+                   save_fig = True, file_type = 'both', dpi=150, base_folder = '', show_fig = True):
     # get list of images
     fx_im_list = sorted(glob.glob('traction_files/fx*.tif'))
     fy_im_list = sorted(glob.glob('traction_files/fy*.tif'))
@@ -517,7 +517,6 @@ def crop_TFM_image(frame, width, height, corner = (0,0), mask = None, arrow_spac
     plt.imshow(TFM_mag_cropped, cmap = LUT, vmin = TFM_min, vmax = TFM_max)
     if colorbar:
         plt.colorbar(norm = colors.Normalize(vmin=TFM_min, vmax=TFM_max), cmap = LUT, label = 'Traction Stress (Pa)')
-    plt.show()
 
     # plot the vectors (fy is negative because origin is flipped for an image)
     plt.quiver(x_cropped,y_cropped,fx_cropped,-fy_cropped,color = arrow_color, scale_units='inches', 
@@ -525,12 +524,19 @@ def crop_TFM_image(frame, width, height, corner = (0,0), mask = None, arrow_spac
     # turn the axis labels off
     plt.axis('off')
 
+
+
     # save the figure
     if save_fig:
         if file_type == 'PNG' or file_type == 'both':
-            plt.savefig('traction_maps_%03d_cropped.png' % frame, dpi = 150, bbox_inches='tight', pad_inches = 0)
+            plt.savefig(base_folder + 'traction_maps_%03d_cropped.png' % frame, dpi = dpi, bbox_inches='tight', pad_inches = 0)
         if file_type == 'EPS' or file_type == 'both':
-            plt.savefig('traction_maps_%03d_cropped.eps' % frame, dpi = 150, bbox_inches='tight', pad_inches = 0)
+            plt.savefig(base_folder + 'traction_maps_%03d_cropped.eps' % frame, dpi = dpi, bbox_inches='tight', pad_inches = 0)
+
+    if show_fig:
+        plt.show()
+    else:
+        plt.close()
     return
 
     
