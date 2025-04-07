@@ -45,7 +45,7 @@ def TFM_Image_registration(flatfield_correct = False, image_list = None, flatfie
     # check if reference has already been corrected
     original_reference_image = glob.glob('*reference_original.tif')
     if len(original_reference_image) > 0:
-        reference_image = io.imread(original_reference_image[0])
+        reference_image = io.imread(original_reference_image[0], plugin='tifffile', is_ome=False)
         # Correct the reference image
         if flatfield_correct:
             reference_image = flat_field_correct_image(reference_image, flatfield_images[0], darkfield_image)
@@ -55,7 +55,7 @@ def TFM_Image_registration(flatfield_correct = False, image_list = None, flatfie
     else:
         # Otherwise find and read in your reference image
         file_list = glob.glob('*_reference.tif')
-        reference_image = io.imread(file_list[0])
+        reference_image = io.imread(file_list[0], plugin='tifffile', is_ome=False)
         # Correct the reference image
         if flatfield_correct:
             io.imsave(file_list[0][:-4] + '_original.tif', reference_image, check_contrast=False)
