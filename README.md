@@ -9,7 +9,7 @@ This code performs the Fourier Transform Traction Cytometry to calculate the for
 1. python, numpy, scikit-image, scipy, pandas, opencv, openpiv, matplotlib, jupyter
 
 ## Optional packages
-1. sksparse (required for the bayesian calculation of the optimal order parameter - adapted from [Huang et al. Computer Physics Communications 256:107313 (2020)](http://dx.doi.org/10.1016/j.cpc.2020.107313))
+1. sksparse (required for the bayesian calculation of the optimal regularization parameter - adapted from [Huang et al. Computer Physics Communications 256:107313 (2020)](http://dx.doi.org/10.1016/j.cpc.2020.107313))
   - For Mac users: `conda install -c conda-forge scikit-sparse`
   - For Windows: It's complicated. See here for details: https://github.com/EmJay276/scikit-sparse
 
