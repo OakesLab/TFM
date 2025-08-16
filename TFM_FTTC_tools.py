@@ -280,3 +280,27 @@ def find_regularization_parameter(shear_modulus = 16000):
     LL = calculate_regularization_parameter(GFt, u, beta, kx, ky, E, nu, meshsize)
 
     return LL
+
+def generate_regparam_stack(imstack, plane = 0, N_guesses = 20, reg_min = 1e-10, reg_max = 1e-4, 
+                            pyr_scale = 0.5, levels = 3, winsize = 8, iterations = 6, poly_n = 1, poly_sigma = 1.5,
+                           pathname = '', save_stack = True):
+
+    # make a list of regparams to try
+    reg_guess = np.geomspace(reg_min, reg_max, N_guesses)
+
+    # calculate the flow vectors for a given plane
+    flow = calculate_flow(reference_image, imstack[plane], pyr_scale = pyr_scale, levels = levels, winsize = winsize,
+                          iterations = iterations, poly_n = poly_n, poly_sigma = poly_sigma)
+    
+    # make an empty stack to hold your output
+    reg_check_stack = np.zeros((N_guesses,reference_image.shape[0],reference_image.shape[1]))
+    
+    # calculate the force for each regparam value
+    for i, reg_val in enumerate(reg_guess):
+        reg_check_stack[i], _ = calculate_forces(flow, shear_modulus=shear_modulus, um_per_pixel=um_per_pixel, regparam=reg_val)
+
+    # save the output
+    if save_stack:
+        io.imsave(pathname + 'regparam_check.tif', reg_check_stack.astype('uint16'), check_contrast = False)
+
+    return reg_guess, reg_check_stack
