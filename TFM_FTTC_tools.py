@@ -281,7 +281,7 @@ def find_regularization_parameter(shear_modulus = 16000):
 
     return LL
 
-def generate_regparam_stack(imstack, plane = 0, N_guesses = 20, reg_min = 1e-10, reg_max = 1e-4, 
+def generate_regparam_stack(imstack, reference_image, plane = 0, N_guesses = 20, reg_min = 1e-10, reg_max = 1e-4, 
                             pyr_scale = 0.5, levels = 3, winsize = 8, iterations = 6, poly_n = 1, poly_sigma = 1.5,
                            pathname = '', save_stack = True):
 
