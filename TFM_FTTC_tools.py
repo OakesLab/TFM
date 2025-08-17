@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt                                # for plotting
 import glob as glob                                            # grabbing file names
 import skimage.io as io                                        # reading in images
 import openpiv.pyprocess
+import cv2
 import scipy.sparse as sparse
 import scipy.linalg as linalg
 from scipy import optimize                                     # curve fitting
