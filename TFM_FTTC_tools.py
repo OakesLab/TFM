@@ -281,7 +281,67 @@ def find_regularization_parameter(shear_modulus = 16000):
 
     return LL
 
-def generate_regparam_stack(imstack, reference_image, plane = 0, N_guesses = 20, reg_min = 1e-10, reg_max = 1e-4, 
+def calculate_flow(reference_image, image, pyr_scale = 0.5, levels = 3, winsize = 8, iterations = 6, poly_n = 1, poly_sigma = 1.5):
+    # perform optical flow forward and backward
+    flow_forward = cv2.calcOpticalFlowFarneback(reference_image, image, None, pyr_scale, levels, winsize, iterations, poly_n, poly_sigma, 0)
+    flow_reverse = cv2.calcOpticalFlowFarneback(image, reference_image, None, pyr_scale, levels, winsize, iterations, poly_n, poly_sigma, 0)
+    
+    # take the average of the two flow fields
+    flow = (flow_forward - flow_reverse) / 2
+
+    # shift axes to make them appropriate
+    flow = np.rollaxis(flow, 2, 0)
+
+    return flow
+
+def calculate_forces(u, shear_modulus = 16000, um_per_pixel = 0.1746, regparam = 1e-16):
+    E = shear_modulus * 3
+    nu = 0.5
+    bead_depth = 0
+    alpha = 0
+    pad_fraction = 0
+    lanczos_exp = 1
+    mesh_size = 1
+    
+    
+    _, N_rows, N_cols = u.shape
+
+    # make matrices with the appropriate x and y coordinates
+    x = np.arange(0, N_cols, mesh_size)
+    y = np.arange(0, N_rows, mesh_size)
+    X, Y = np.meshgrid(x,y)
+    # x, y = openpiv.pyprocess.get_coordinates((N_rows, N_cols), 1, 0)
+    grid_mat = np.zeros((2,N_rows,N_cols))
+    grid_mat[0,:,:] = X
+    grid_mat[1,:,:] = Y
+    i_bound_size = 0
+    j_bound_size = 0
+    i_max = grid_mat.shape[1]
+    j_max = grid_mat.shape[2]
+    
+    # calculate the fourier modes
+    kx, ky, lanczosx, lanczosy = calculate_fourier_modes(mesh_size, i_max, j_max, lanczos_exp)
+    # calculate the Green's Function
+    GFt = calculate_greens_function(E, nu, kx, ky, i_max, j_max, mesh_size, bead_depth)
+
+    # Calculate the inverse Green's function
+    G_inv_xx, G_inv_xy, G_inv_yy = calculate_Ginv(GFt, regparam)
+    # G_inv_xx, G_inv_xy, G_inv_yy = calculate_Ginv(kx, ky, E, nu, u.shape[1], u.shape[2], mesh_size, regparam)
+    
+    # Perform the actual TFM
+    Ftfx, Ftfy = reg_fourier_TFM_L2(u, G_inv_xx, G_inv_xy, G_inv_yy)
+    # Reshape tractions in frequency space into an array
+    Ftf = np.array([Ftfx, Ftfy])
+    # Recover the displacement field from the traction stresses
+    urec, Fturec = reconstruct_displacement_field(GFt, Ftfx, Ftfy, lanczosx, lanczosy)
+    # Recover the actual traction stresses
+    pos, vec, fnorm, f, energy = calculate_stress_field(Ftfx, Ftfy, lanczosx, lanczosy, grid_mat, u, i_max, j_max,
+                                                    i_bound_size, j_bound_size, um_per_pixel, mesh_size)
+
+    return fnorm, f
+
+def generate_regparam_stack(imstack, reference_image, plane = 0, N_guesses = 20, reg_min = 1e-10, reg_max = 1e-4,
+                            shear_modulus = 16000, um_per_pixel = .1746, 
                             pyr_scale = 0.5, levels = 3, winsize = 8, iterations = 6, poly_n = 1, poly_sigma = 1.5,
                            pathname = '', save_stack = True):
 
