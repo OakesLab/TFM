@@ -472,6 +472,68 @@ def cellmask_threshold(imagename, small_object_size=50, cell_minimum_area=50000,
 
     return cellmask_stack, forcemask_stack, threshold
 
+def update_forcemask(dilation_size = 10, save_figure=True, plot_figure=True, timepoint = 0):
+    # read in cell_mask
+    cellmask_stack = io.imread('cellmask.tif').astype('bool')
+    
+    # determine the number of planes
+    if len(cellmask_stack.shape) == 2:
+        cellmask_stack = np.expand_dims(cellmask_stack, axis=0)
+    
+    # create empty matrices to hold our masks
+    forcemask_stack = np.zeros(cellmask_stack.shape)
+
+    # create the structuring element to dilate the cellmask
+    forceSE = disk(dilation_size)
+    
+    # loop through each image in the stack
+    for plane, mask in enumerate(cellmask_stack):
+
+        # make a forcemask
+        forcemask = cv2.dilate(mask.astype('uint8'), forceSE)
+
+        #store the forcemask in the stack
+        forcemask_stack[plane] = forcemask.copy()
+
+    # plot figure 
+    if plot_figure == True:
+        cwd = os.getcwd()
+        cellname = cwd[cwd.find('cell'):] 
+        # check to see if tractionmaps exist
+        traction_file = glob.glob('traction_maps.tif')
+        if len(traction_file) == 1:
+            tractionmap = io.imread('traction_maps.tif')
+            if len(tractionmap.shape) > 2:
+                tractionmap = tractionmap[timepoint]
+        else:
+            tractionmap = np.zeros_like(forcemask)
+
+        # plotting for data confirmation
+        mask_fig, mask_axes = plt.subplots(nrows=2, ncols=2)
+        mask_axes[0,0].imshow(imagestack[timepoint], cmap='Greys_r', vmin=np.min(image), vmax=np.max(image)*.8)
+        mask_axes[0,0].set_title(cellname)
+        mask_axes[0,1].imshow(imagestack[timepoint], cmap='Greys_r', vmin=np.min(image), vmax=np.max(image)*.8)
+        mask_axes[0,1].imshow(cellmask_stack[timepoint], alpha=0.2)
+        mask_axes[0,1].set_title('cellmask')
+        mask_axes[1,0].imshow(tractionmap, vmax=np.max(image)*.8)
+        mask_axes[1,1].imshow(tractionmap, vmax=np.max(image)*.8)
+        mask_axes[1,1].imshow(forcemask_stack[timepoint], alpha=0.2)
+        mask_axes[1,1].set_title('forcemask')
+        mask_axes[0,0].axis('off')
+        mask_axes[1,0].axis('off')
+        mask_axes[0,1].axis('off')
+        mask_axes[1,1].axis('off')
+        mask_fig.tight_layout()
+        mask_fig.savefig('mask_check.png', format='png', dpi=300)
+
+    if save_figure == True:
+        io.imsave('forcemask.tif', forcemask_stack.astype('uint8') * 255, check_contrast=False)
+
+    # reduce dimensions on stack if only one plane
+    if cellmask_stack.shape[0] == 1:
+        forcemask_stack = forcemask_stack[0]
+
+    return 
 
 def crop_TFM_image(frame, width, height, corner = (0,0), mask = None, arrow_spacing = 12, LUT = 'viridis', arrow_scale = None, 
                    TFM_min = 0, TFM_max = None, arrow_color = 'w', min_arrow_mag = None, arrow_width = 1, colorbar = False, 
