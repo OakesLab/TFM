@@ -42,10 +42,18 @@ def TFM_Image_registration(flatfield_correct = False, image_list = None, flatfie
             flatfield_correct = False
             print('No darkfield images provided - images will not be corrected')
     
+    # check if flatfield and darkfield images are strings or arrays - read in if strings
+    if flatfield_correct:
+        if isinstance(flatfield_images[0], str):
+            # repopulate list with images
+            flatfield_images = [io.imread(filename) for filename in flatfield_images]
+        if isinstance(darkfield_image, str):
+            darkfield_image = io.imread(darkfield_image)
+            
     # check if reference has already been corrected
     original_reference_image = glob.glob('*reference_original.tif')
     if len(original_reference_image) > 0:
-        reference_image = io.imread(original_reference_image[0], plugin='tifffile', is_ome=False)
+        reference_image = io.imread(original_reference_image[0], plugin='tifffile', is_ome=False).astype('float32')
         # Correct the reference image
         if flatfield_correct:
             reference_image = flat_field_correct_image(reference_image, flatfield_images[0], darkfield_image)
@@ -55,7 +63,7 @@ def TFM_Image_registration(flatfield_correct = False, image_list = None, flatfie
     else:
         # Otherwise find and read in your reference image
         file_list = glob.glob('*_reference.tif')
-        reference_image = io.imread(file_list[0], plugin='tifffile', is_ome=False)
+        reference_image = io.imread(file_list[0], plugin='tifffile', is_ome=False).astype('float32')
         # Correct the reference image
         if flatfield_correct:
             io.imsave(file_list[0][:-4] + '_original.tif', reference_image, check_contrast=False)
@@ -66,7 +74,7 @@ def TFM_Image_registration(flatfield_correct = False, image_list = None, flatfie
     N_cols = reference_image.shape[1]
 
     # read in your bead image
-    image_stack = io.imread(file_name + '.tif')
+    image_stack = io.imread(file_name + '.tif').astype('float32')
 
     # correct the stack shape if there's only one image
     if len(image_stack.shape) == 2:
