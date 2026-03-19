@@ -375,7 +375,7 @@ def cellmask_threshold(imagename, small_object_size=50, cell_minimum_area=50000,
         # get rid of small objects
         mask = remove_small_objects(mask, small_object_size)
         # fill any holes in the mask
-        mask = morphology.binary_fill_holes(mask)
+        mask = binary_fill_holes(mask)
         # remove anything on the border
 
         # label the mask objects and get region props
@@ -394,23 +394,34 @@ def cellmask_threshold(imagename, small_object_size=50, cell_minimum_area=50000,
             # calculate the distance from the center of the image to the object centroid
             distance.append(np.sqrt((center_row - region.centroid[0])**2 + (center_col - region.centroid[1])**2))
 
-        # create a loop to check on if the object is centered and large
-        check_point = True
         # list of labels to keep track of the object in questions
         label_list = list(range(len(areas)))
-        while check_point == True:
-            # find the object with the closest centroid
-            closest_region = np.argwhere(distance == np.min(distance))
-            # remove that object from the list
-            distance.pop(closest_region[0][0])
-            # remove that label from the list
-            closest_region_label = label_list.pop(closest_region[0][0])
-            # check if that object has an area greater than our cell minimum area 
-            if areas[closest_region_label] > cell_minimum_area:
-                break
-
-        # use that label to make your cell mask
-        cellmask = mask_label == (closest_region_label + 1)
+        # print(label_list)
+        # create a loop to check on if the object is centered and large
+        if label_list == []:
+            check_point = False
+            cellmask = np.zeros_like(image)
+        else:
+            check_point = True
+        
+            while check_point == True:
+                # find the object with the closest centroid
+                closest_region = np.argwhere(distance == np.min(distance))
+                # remove that object from the list
+                distance.pop(closest_region[0][0])
+                # remove that label from the list
+                closest_region_label = label_list.pop(closest_region[0][0])
+                # check if that object has an area greater than our cell minimum area 
+                if areas[closest_region_label] > cell_minimum_area:
+                    break
+                elif label_list == []:
+                    break
+        
+            if label_list == []:
+                cellmask = np.zeros_like(image)
+            else:
+                # use that label to make your cell mask
+                cellmask = mask_label == (closest_region_label + 1)
 
         # make a structuring element to filter the binary image with
         #SE2 = disk(5)
@@ -448,8 +459,8 @@ def cellmask_threshold(imagename, small_object_size=50, cell_minimum_area=50000,
         mask_axes[0,1].imshow(imagestack[timepoint], cmap='Greys_r', vmin=np.min(image), vmax=np.max(image)*.8)
         mask_axes[0,1].imshow(cellmask_stack[timepoint], alpha=0.2)
         mask_axes[0,1].set_title('cellmask')
-        mask_axes[1,0].imshow(tractionmap, vmin = 0, vmax = np.max(tractionmap)*.8)
-        mask_axes[1,1].imshow(tractionmap, vmin = 0, vmax = np.max(tractionmap)*.8)
+        mask_axes[1,0].imshow(tractionmap, vmax=np.max(image)*.8)
+        mask_axes[1,1].imshow(tractionmap, vmax=np.max(image)*.8)
         mask_axes[1,1].imshow(forcemask_stack[timepoint], alpha=0.2)
         mask_axes[1,1].set_title('forcemask')
         mask_axes[0,0].axis('off')
